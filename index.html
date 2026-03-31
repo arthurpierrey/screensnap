@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ScreenSnap — Stop sharing ugly screenshots</title>
+    <meta
+      name="description"
+      content="ScreenSnap is the Chrome extension that turns plain screenshots into polished visuals with gradients, shadows, browser frames, and one-click export."
+    />
+    <meta name="theme-color" content="#1a1a2e" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ScreenSnap — Stop sharing ugly screenshots" />
+    <meta
+      property="og:description"
+      content="Beautify screenshots in seconds with gradients, shadows, padding controls, browser mockups, and private on-device export."
+    />
+    <meta property="og:url" content="https://screensnap.example.com/" />
+    <meta property="og:site_name" content="ScreenSnap" />
+    <meta property="og:image" content="https://screensnap.example.com/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ScreenSnap — Stop sharing ugly screenshots" />
+    <meta
+      name="twitter:description"
+      content="Beautify screenshots in seconds and export polished images without sending your data anywhere."
+    />
+    <meta name="twitter:image" content="https://screensnap.example.com/og-image.png" />
+
+    <style>
+      :root {
+        --bg: #1a1a2e;
+        --bg-soft: rgba(255, 255, 255, 0.05);
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel-strong: rgba(255, 255, 255, 0.09);
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #f5f7ff;
+        --muted: #a8b0d3;
+        --accent: #8b5cf6;
+        --accent-2: #38bdf8;
+        --accent-3: #c084fc;
+        --shadow: 0 30px 80px rgba(4, 8, 30, 0.45);
+        --radius: 24px;
+        --radius-sm: 18px;
+        --max: 1160px;
+        --section-pad: clamp(4rem, 8vw, 8rem);
+        --hero-pad: clamp(5rem, 12vw, 9rem);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 10% 10%, rgba(139, 92, 246, 0.22), transparent 30%),
+          radial-gradient(circle at 90% 15%, rgba(56, 189, 248, 0.18), transparent 28%),
+          radial-gradient(circle at 50% 100%, rgba(192, 132, 252, 0.18), transparent 35%),
+          linear-gradient(180deg, #151528 0%, #1a1a2e 35%, #121222 100%);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(circle at center, black 32%, transparent 80%);
+        pointer-events: none;
+        opacity: 0.4;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img {
+        max-width: 100%;
+        display: block;
+      }
+
+      .container {
+        width: min(calc(100% - 2rem), var(--max));
+        margin: 0 auto;
+      }
+
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        backdrop-filter: blur(18px);
+        background: rgba(17, 17, 31, 0.62);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 0;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.8rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .brand-mark {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-size: 1.05rem;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow: 0 10px 25px rgba(107, 92, 255, 0.35);
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .nav-links a:hover {
+        color: var(--text);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.95rem 1.45rem;
+        font-weight: 700;
+        font-size: 0.98rem;
+        letter-spacing: -0.02em;
+        cursor: pointer;
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn-primary {
+        color: white;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow:
+          0 12px 30px rgba(94, 92, 230, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-primary:hover {
+        box-shadow:
+          0 18px 38px rgba(94, 92, 230, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-secondary {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      section {
+        position: relative;
+        padding: var(--section-pad) 0;
+      }
+
+      .hero {
+        padding: var(--hero-pad) 0 5rem;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        gap: clamp(2rem, 5vw, 5rem);
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.45rem 0.8rem;
+        margin-bottom: 1.35rem;
+        border-radius: 999px;
+        color: #d8ddff;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 0.92rem;
+        backdrop-filter: blur(8px);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        font-size: clamp(3rem, 7vw, 5.4rem);
+        line-height: 0.96;
+        letter-spacing: -0.055em;
+        margin-bottom: 1.35rem;
+        max-width: 11ch;
+      }
+
+      .hero-copy p {
+        font-size: clamp(1.05rem, 2vw, 1.22rem);
+        color: var(--muted);
+        max-width: 60ch;
+        margin-bottom: 2rem;
+      }
+
+      .hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.6rem;
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.4rem;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .hero-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+      }
+
+      .mockup-wrap {
+        position: relative;
+      }
+
+      .hero-orb,
+      .hero-orb-2 {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(30px);
+        opacity: 0.8;
+        z-index: 0;
+      }
+
+      .hero-orb {
+        width: 180px;
+        height: 180px;
+        right: 6%;
+        top: -5%;
+        background: rgba(139, 92, 246, 0.25);
+      }
+
+      .hero-orb-2 {
+        width: 220px;
+        height: 220px;
+        left: -8%;
+        bottom: 5%;
+        background: rgba(56, 189, 248, 0.2);
+      }
+
+      .mockup-card {
+        position: relative;
+        z-index: 1;
+        padding: 1rem;
+        border-radius: 30px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .window-frame {
+        border-radius: 22px;
+        overflow: hidden;
+        background: #141426;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .window-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+        background: rgba(255, 255, 255, 0.04);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .dots {
+        display: inline-flex;
+        gap: 0.42rem;
+      }
+
+      .dots span {
+        width: 0.72rem;
+        height: 0.72rem;
+        border-radius: 999px;
+        display: inline-block;
+      }
+
+      .dots span:nth-child(1) { background: #ff5f57; }
+      .dots span:nth-child(2) { background: #febc2e; }
+      .dots span:nth-child(3) { background: #28c840; }
+
+      .address-pill {
+        flex: 1;
+        max-width: 240px;
+        margin-left: auto;
+        border-radius: 999px;
+        padding: 0.45rem 0.8rem;
+        color: #bbc3ec;
+        background: rgba(255, 255, 255, 0.05);
+        text-align: center;
+        font-size: 0.82rem;
+      }
+
+      .canvas-preview {
+        position: relative;
+        padding: clamp(1rem, 3vw, 1.4rem);
+        background:
+          radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.18), transparent 30%),
+          linear-gradient(135deg, #6d28d9 0%, #8b5cf6 22%, #2563eb 65%, #38bdf8 100%);
+        min-height: 420px;
+      }
+
+      .screenshot-card {
+        width: min(100%, 420px);
+        margin: 1.8rem auto;
+        border-radius: 24px;
+        background: rgba(13, 16, 36, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow:
+          0 30px 50px rgba(7, 10, 27, 0.38),
+          0 10px 20px rgba(7, 10, 27, 0.22);
+        overflow: hidden;
+        transform: rotate(-5deg);
+      }
+
+      .shot-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.9rem 1rem;
+        background: rgba(255, 255, 255, 0.04);
+        color: #d6dcff;
+        font-size: 0.86rem;
+      }
+
+      .shot-body {
+        padding: 1.1rem;
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .shot-line,
+      .shot-box,
+      .shot-stat {
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .shot-line {
+        height: 12px;
+      }
+
+      .shot-line.short { width: 52%; }
+      .shot-line.med { width: 76%; }
+      .shot-line.long { width: 100%; }
+
+      .shot-row {
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr;
+        gap: 0.9rem;
+      }
+
+      .shot-box {
+        min-height: 115px;
+        background:
+          linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(56, 189, 248, 0.18)),
+          rgba(255, 255, 255, 0.08);
+      }
+
+      .shot-side {
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .shot-stat {
+        min-height: 53px;
+      }
+
+      .floating-chip {
+        position: absolute;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.7rem 0.9rem;
+        border-radius: 999px;
+        color: white;
+        background: rgba(17, 18, 34, 0.76);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 18px 32px rgba(6, 9, 26, 0.25);
+        font-size: 0.88rem;
+        backdrop-filter: blur(10px);
+      }
+
+      .chip-1 { top: 12%; left: -8%; }
+      .chip-2 { right: -5%; top: 48%; }
+      .chip-3 { left: 5%; bottom: 8%; }
+
+      .section-heading {
+        text-align: center;
+        max-width: 760px;
+        margin: 0 auto 3rem;
+      }
+
+      .section-heading .label {
+        display: inline-block;
+        color: #b8c1ff;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.18em;
+        margin-bottom: 0.9rem;
+      }
+
+      .section-heading h2 {
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+        margin-bottom: 1rem;
+      }
+
+      .section-heading p {
+        color: var(--muted);
+        font-size: 1.05rem;
+        margin-bottom: 0;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.15rem;
+      }
+
+      .card {
+        position: relative;
+        padding: 1.5rem;
+        border-radius: var(--radius-sm);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 45px rgba(6, 9, 26, 0.2);
+        overflow: hidden;
+      }
+
+      .card::after {
+        content: "";
+        position: absolute;
+        inset: auto -20% -35% auto;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle, rgba(139, 92, 246, 0.22), transparent 70%);
+        pointer-events: none;
+      }
+
+      .feature-icon {
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
+      }
+
+      .card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.55rem;
+        letter-spacing: -0.03em;
+      }
+
+      .card p {
+        color: var(--muted);
+        margin-bottom: 0;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.2rem;
+        align-items: stretch;
+      }
+
+      .step {
+        padding: 1.6rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .step-number {
+        width: 3rem;
+        height: 3rem;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        margin-bottom: 1rem;
+        font-weight: 800;
+        font-size: 1rem;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(56, 189, 248, 0.22));
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .step h3 {
+        font-size: 1.18rem;
+        margin-bottom: 0.55rem;
+        letter-spacing: -0.03em;
+      }
+
+      .step p {
+        color: var(--muted);
+        margin-bottom: 0;
+      }
+
+      .arrow {
+        position: absolute;
+        top: 50%;
+        right: -0.8rem;
+        transform: translateY(-50%);
+        color: rgba(210, 220, 255, 0.4);
+        font-size: 1.7rem;
+      }
+
+      .social-proof {
+        padding-top: 1rem;
+      }
+
+      .proof-banner,
+      .cta-panel {
+        position: relative;
+        padding: clamp(1.8rem, 4vw, 3rem);
+        border-radius: 28px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at top left, rgba(139, 92, 246, 0.24), transparent 40%),
+          radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.22), transparent 35%),
+          rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: var(--shadow);
+        text-align: center;
+      }
+
+      .proof-banner h2,
+      .cta-panel h2 {
+        margin-bottom: 0.7rem;
+        font-size: clamp(1.75rem, 4vw, 2.7rem);
+        letter-spacing: -0.04em;
+      }
+
+      .proof-banner p,
+      .cta-panel p {
+        color: var(--muted);
+        font-size: 1.03rem;
+        max-width: 60ch;
+        margin: 0 auto;
+      }
+
+      .proof-tags {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        margin-top: 1.6rem;
+      }
+
+      .proof-tags span {
+        padding: 0.7rem 1rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #d4dbff;
+        font-size: 0.94rem;
+      }
+
+      .cta-panel {
+        display: grid;
+        gap: 1rem;
+        justify-items: center;
+      }
+
+      .site-footer {
+        padding: 2rem 0 3rem;
+        color: var(--muted);
+      }
+
+      .footer-inner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 1.4rem;
+        font-size: 0.95rem;
+      }
+
+      .footer-inner a {
+        color: #d5dbff;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 700ms ease, transform 700ms ease;
+        will-change: opacity, transform;
+      }
+
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .hero-grid,
+        .features-grid,
+        .steps {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          padding-top: 4.8rem;
+        }
+
+        .mockup-wrap {
+          max-width: 680px;
+          margin: 0 auto;
+        }
+
+        .chip-1,
+        .chip-2,
+        .chip-3 {
+          position: static;
+          margin-top: 0.8rem;
+          display: inline-flex;
+        }
+
+        .floating-chip-row {
+          display: flex;
+          gap: 0.7rem;
+          flex-wrap: wrap;
+          justify-content: center;
+          margin-top: 1rem;
+        }
+
+        .arrow {
+          display: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .site-header {
+          position: static;
+        }
+
+        .nav {
+          flex-wrap: wrap;
+        }
+
+        .nav-links {
+          width: 100%;
+          justify-content: space-between;
+          gap: 0.8rem;
+          font-size: 0.9rem;
+        }
+
+        .hero-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .btn {
+          width: 100%;
+        }
+
+        .canvas-preview {
+          min-height: auto;
+        }
+
+        .screenshot-card {
+          transform: none;
+          margin: 1rem auto;
+        }
+
+        .footer-inner {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a href="#top" class="brand" aria-label="ScreenSnap home">
+          <span class="brand-mark">🦊</span>
+          <span>ScreenSnap</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#chrome-store-link" class="btn btn-secondary">Add to Chrome</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy reveal">
+            <div class="eyebrow">✨ Beautify screenshots in seconds</div>
+            <h1>Stop sharing ugly screenshots</h1>
+            <p>
+              ScreenSnap turns plain captures into polished visuals with gorgeous gradients,
+              elegant browser frames, perfect spacing, and fast export — all directly in your browser.
+            </p>
+            <div class="hero-actions">
+              <a href="#chrome-store-link" class="btn btn-primary">Add to Chrome — It's Free</a>
+              <a href="#features" class="btn btn-secondary">See features</a>
+            </div>
+            <div class="hero-meta" aria-label="Highlights">
+              <span>⚡ 10-second workflow</span>
+              <span>🔒 Fully private</span>
+              <span>🖼️ Built for sharing</span>
+            </div>
+          </div>
+
+          <div class="mockup-wrap reveal">
+            <div class="hero-orb"></div>
+            <div class="hero-orb-2"></div>
+            <div class="mockup-card">
+              <div class="window-frame" aria-label="ScreenSnap mockup preview">
+                <div class="window-bar">
+                  <div class="dots" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <div class="address-pill">screensnap.app/beautify</div>
+                </div>
+                <div class="canvas-preview">
+                  <div class="screenshot-card">
+                    <div class="shot-top">
+                      <span>Product dashboard</span>
+                      <span>Export ready</span>
+                    </div>
+                    <div class="shot-body">
+                      <div class="shot-line short"></div>
+                      <div class="shot-line med"></div>
+                      <div class="shot-line long"></div>
+                      <div class="shot-row">
+                        <div class="shot-box"></div>
+                        <div class="shot-side">
+                          <div class="shot-stat"></div>
+                          <div class="shot-stat"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="floating-chip chip-1">🎨 8 gradient presets</div>
+            <div class="floating-chip chip-2">🖥️ macOS browser frame</div>
+            <div class="floating-chip chip-3">📤 PNG + clipboard export</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="container">
+          <div class="section-heading reveal">
+            <span class="label">Features</span>
+            <h2>Everything you need to make screenshots look intentional</h2>
+            <p>
+              From gradients and shadows to browser chrome and one-click export, ScreenSnap gives
+              every screenshot a clean, premium finish.
+            </p>
+          </div>
+
+          <div class="features-grid">
+            <article class="card reveal">
+              <div class="feature-icon">🎨</div>
+              <h3>Gradient Backgrounds</h3>
+              <p>Pick from 8 stunning presets designed to make every capture pop instantly.</p>
+            </article>
+            <article class="card reveal">
+              <div class="feature-icon">📐</div>
+              <h3>Adjustable Padding &amp; Radius</h3>
+              <p>Dial in spacing and corner roundness for the exact presentation style you want.</p>
+            </article>
+            <article class="card reveal">
+              <div class="feature-icon">🌑</div>
+              <h3>Drop Shadows</h3>
+              <p>Choose between 3 shadow intensity levels to create depth without overdoing it.</p>
+            </article>
+            <article class="card reveal">
+              <div class="feature-icon">🖥️</div>
+              <h3>Browser Frame Mockup</h3>
+              <p>Add a sleek macOS-style browser frame to make website screenshots feel product-ready.</p>
+            </article>
+            <article class="card reveal">
+              <div class="feature-icon">📤</div>
+              <h3>Export PNG or Copy to Clipboard</h3>
+              <p>Save polished images fast or copy them straight into tweets, docs, and presentations.</p>
+            </article>
+            <article class="card reveal" id="privacy">
+              <div class="feature-icon">🔒</div>
+              <h3>100% Private</h3>
+              <p>Your screenshots stay on your device — nothing is uploaded, tracked, or sent anywhere.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works">
+        <div class="container">
+          <div class="section-heading reveal">
+            <span class="label">How it works</span>
+            <h2>From raw capture to polished share in three simple steps</h2>
+            <p>
+              No design tools. No editing workflow. Just capture, style, and export a screenshot
+              that actually looks good.
+            </p>
+          </div>
+
+          <div class="steps">
+            <article class="step reveal">
+              <div class="step-number">1</div>
+              <h3>Capture</h3>
+              <p>Grab a screenshot from your browser or workflow and drop it into ScreenSnap.</p>
+              <span class="arrow" aria-hidden="true">→</span>
+            </article>
+            <article class="step reveal">
+              <div class="step-number">2</div>
+              <h3>Customize</h3>
+              <p>Choose a gradient, tweak padding and radius, add a frame, and dial in the shadow.</p>
+              <span class="arrow" aria-hidden="true">→</span>
+            </article>
+            <article class="step reveal">
+              <div class="step-number">3</div>
+              <h3>Export</h3>
+              <p>Download a crisp PNG or copy it to your clipboard, ready to share anywhere.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="social-proof">
+        <div class="container">
+          <div class="proof-banner reveal">
+            <h2>Loved by developers, designers &amp; indie hackers</h2>
+            <p>
+              A polished screenshot can make a huge difference — whether you're shipping a product,
+              sharing a build, or posting your latest win online.
+            </p>
+            <div class="proof-tags" aria-label="Audience tags">
+              <span>Developers</span>
+              <span>Designers</span>
+              <span>Indie Hackers</span>
+              <span>Product Makers</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="container">
+          <div class="cta-panel reveal">
+            <h2>Make every screenshot feel launch-ready</h2>
+            <p>
+              Install ScreenSnap and turn rough captures into visuals you’ll actually want to post,
+              ship, and share.
+            </p>
+            <a id="chrome-store-link" href="#chrome-store-link" class="btn btn-primary">
+              Add to Chrome — It's Free
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>Made with 🦊 by ScreenSnap</p>
+        <a href="#privacy-policy">Privacy Policy</a>
+      </div>
+    </footer>
+
+    <script>
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.14 }
+      );
+
+      document.querySelectorAll('.reveal').forEach((element) => observer.observe(element));
+    </script>
+  </body>
+</html>
