@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
+  <defs>
+    <style>
+      .bg{fill:#000000;}
+      .white{fill:#FFFFFF;}
+      .orange{fill:#FF6A00;}
+      .text{font-family:Inter, system-ui, sans-serif; font-weight:600;}
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect class="bg" width="600" height="200" rx="24"/>
+
+  <!-- Icon group -->
+  <g transform="translate(30,20) scale(0.8)">
+    <rect x="48" y="110" width="140" height="80" rx="16" class="white"/>
+    
+    <path d="M90 145 l-10 10 l10 10" stroke="#FF6A00" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M130 145 l10 10 l-10 10" stroke="#FF6A00" stroke-width="6" fill="none" stroke-linecap="round"/>
+    
+    <path d="M80 60 Q60 100 90 120 Q110 130 110 150 Q110 120 140 110 Q150 90 120 70 Q100 50 80 60 Z" class="white"/>
+    
+    <path d="M135 80 Q165 75 155 95 Q140 100 135 90 Z" class="orange"/>
+  </g>
+
+  <!-- Text -->
+  <text x="240" y="120" class="text white" font-size="64">Goose</text>
+  <text x="430" y="120" class="text orange" font-size="64">kit</text>
+</svg>
